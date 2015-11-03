@@ -1,5 +1,5 @@
-#ifndef VERTEX_SET_HH
-#define VERTEX_SET_HH
+#ifndef SQUARE_SYMMETRIC_MATRIX_HH
+#define SQUARE_SYMMETRIC_MATRIX_HH
 
 #include <vector>
 
@@ -31,24 +31,6 @@ public:
 private:
   size_type n;
   container_type data;
-};
-
-template <typename T>
-class vertex_set {
-public:
-  typedef T value_type;
-  typedef square_symmetric_matrix<value_type> table_type;
-  typedef typename table_type::size_type size_type;
-  
-  vertex_set(const table_type& t) : table(t) { }
-
-  inline value_type distance(size_type i, size_type j) const
-  { return table(i,j); }
-
-  inline size_type size() const { return table.size(); }
-
-private:
-  table_type table;
 };
 
 #endif
