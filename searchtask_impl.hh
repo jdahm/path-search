@@ -2,8 +2,7 @@
 #define SEARCHTASK_IMPL_HH
 
 #include <omp.h>
-// #include <queue>
-#include <deque>
+#include <queue>
 #include <functional>
 
 // Search task queue -- any call to this must 
@@ -11,7 +10,7 @@
 template <typename T>
 class search_queue : public task_queue<T> {
 public:
-  typedef std::deque<T> container_type;
+  typedef std::queue<T> container_type;
   typedef task_queue<T> base_type;
   typedef typename base_type::task_type task_type;
   typedef typename base_type::size_type size_type;
@@ -21,12 +20,12 @@ public:
   search_queue() : container() { omp_init_lock(&lock); }
 
   void add(const task_type &t)
-  { get_lock(); container.push_back(t); release_lock(); }
+  { get_lock(); container.push(t); release_lock(); }
 
   task_type get() {
     get_lock();
-    task_type task = container.back();
-    container.pop_back();
+    task_type task = container.front();
+    container.pop();
     release_lock();
     return task;
   }
