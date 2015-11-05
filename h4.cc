@@ -3,18 +3,20 @@
 #include <cmath>
 #include <array>
 #include <vector>
+#include <sstream>
 
 #include "square_symmetric_matrix.hh"
 #include "Euclidean_impl.hh"
 #include "searchtask_impl.hh"
 
 typedef double real;
+typedef unsigned int index_type;
 typedef Euclidean_set<real> graph_type;
 typedef EH_search_path<real> spath_type;
-// typedef Euclidean_path<real> gpath_type;
+typedef Euclidean_path<real> gpath_type;
 
 typedef spath_type task_type;
-typedef spath_type answer_type;
+typedef gpath_type answer_type;
 typedef search_manager<task_type, answer_type> manager_type;
 
 
@@ -36,10 +38,9 @@ graph_type example_graph() {
   return graph_type(dt);
 }
 
-graph_type create_point_set() {
+graph_type create_point_set(index_type c) {
   using std::abs; using std::pow;
   // ( |p1-q1|^(3/2) + |p2-q2|^(3/2) )^(2/3)
-  constexpr unsigned int c = 13;
   square_symmetric_matrix<real> dt(c);
   std::vector< std::array<real,2> > point(c);
 
@@ -69,10 +70,20 @@ graph_type create_point_set() {
 void find_path_task(task_type &sp, manager_type &manager) {
   // Get best answer
   answer_type ans = manager.answer();
+
+  unsigned int branch_level = 2;
+  // unsigned int num_threads = omp_get_num_threads();
+  // unsigned int nnode = sp.graph().size() - 1;
+  // while ((nnode < num_threads) && (nnode - 1 > 0)) {
+  //   branch_level++;
+  //   nnode *= (nnode - 1);
+  // }
+  // std::cout << "branch level = " << branch_level << std::endl;
+
   do {
     sp.iterate_dfs();
     // std::cout << sp << "    |     " << ans << std::endl;
-    if (sp.global_level() < 3)
+    if (sp.global_level() <= branch_level)
       while (!sp.last_branch())
         manager.give(sp.split());
     if (sp > ans) sp.next_branch();
@@ -80,7 +91,7 @@ void find_path_task(task_type &sp, manager_type &manager) {
       // If answer is better than the bound we cached, submit it to
       // the manager (which will ensure it's _actually_ better) and
       // will return the newest answer.
-      if (sp < ans) ans = manager.conclude(sp);
+      ans = manager.conclude(sp);
     }
   } while (!sp.is_top());
 }
@@ -101,13 +112,21 @@ const answer_type find_path(const graph_type &g) {
   return manager.answer();
 }
 
-int main() {
+int main(int argc, char *argv[]) {
   real start_time, end_time;
+  index_type c, branch_level;
+  std::string prog;
+  std::stringstream ss;
+
+  if (argc != 3) throw std::runtime_error("Usage: " + prog + " c branch_level");
+  for (int i=0; i<3; i++) ss << argv[i] << ' ';
+  ss >> prog >> c >> branch_level;\
+  std::cout << "Call: " << prog << " " << c << " " << branch_level << std::endl;
 
   start_time = omp_get_wtime();
 
   // auto ps = example_graph();
-  auto ps = create_point_set();
+  auto ps = create_point_set(c);
   auto sp = find_path(ps);
 
   end_time = omp_get_wtime();

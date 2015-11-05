@@ -119,6 +119,8 @@ public:
     return *this;
   }
 
+  const graph_type& graph() const { return mygraph; }
+
 private:
   typedef std::stack<index_type> stack_type;
   typedef std::set<size_type> set_type;
