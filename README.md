@@ -91,3 +91,40 @@ from these we can implement a number of _nice_ methods for
 
 * `is_root()` : returns true if the active location is at the root
 * `is_leaf()` : returns true if the active location is at a leaf
+
+
+## Todo
+
+Overall task: Find best path through tree
+
+Sub-task: Find better complete path through tree than bound
+
+Manager: gives work to workers
+
+Worker: uses strategy
+
+
+Task: `Search`
+Find best path through tree
+Result: best path
+Defines: `done`, `get_more_info`, `split`, `answer`
+Constructor: takes `search_tree`, and a bound
+
+
+`find_Hamiltonian_path`
+
+search collection of tasks (queue, priority queue, etc.)
+
+initialize a `search` at the top of the tree
+
+loop {
+try to get lock
+when (got lock) {
+pop task
+release lock
+do task
+}
+}
+
+
+path: 0 1 6 2 5 3 4 7 weight: 29.9379
