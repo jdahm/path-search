@@ -180,13 +180,13 @@ private:
     const size_type gl = global_level();
     const index_type gi = p[gl];
     total_distance -= mygraph.distance(p[gl-1], p[gl]);
-    for (size_type j=gl; j<gl+i; j++) p[j] = p[j+1];
+    std::copy_backward(p.begin()+gl+1, p.begin()+gl+1+i, p.begin()+gl+i);
     p[gl+i] = gi;
     tlevel--;
     update_local();
   }
 
-  virtual bool has_next_sibling() { return whoami() < num_sibling(); }
+  bool has_next_sibling() { return whoami() < num_sibling(); }
 
   size_type num_sibling() const
   { return num_children() % (mygraph.size() - rsize - 1); }
