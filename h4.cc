@@ -81,11 +81,12 @@ void find_path_task(task_type &sp, manager_type &manager) {
   // std::cout << "branch level = " << branch_level << std::endl;
 
   do {
+    // std::cout << "Before: " << sp.global_level() << " : " << sp << "    |     " << ans << std::endl;
     sp.iterate_dfs();
-    // std::cout << sp.global_level() << " : " << sp << "    |     " << ans << std::endl;
-    // if (sp.global_level() <= branch_level)
-    //   while (!sp.last_branch())
-    //     manager.give(sp.split());
+    // std::cout << "After: " << sp.global_level() << " : " << sp << "    |     " << ans << std::endl;
+    if (sp.global_level() <= branch_level)
+      while (!sp.last_branch())
+        manager.give(sp.split());
     if (sp > ans) sp.next_branch();
     if (sp.is_bottom()) {
       // If answer is better than the bound we cached, submit it to
@@ -120,7 +121,7 @@ int main(int argc, char *argv[]) {
 
   if (argc != 3) throw std::runtime_error("Usage: " + prog + " c branch_level");
   for (int i=0; i<3; i++) ss << argv[i] << ' ';
-  ss >> prog >> c >> branch_level;\
+  ss >> prog >> c >> branch_level;
   std::cout << "Call: " << prog << " " << c << " " << branch_level << std::endl;
 
   start_time = omp_get_wtime();
