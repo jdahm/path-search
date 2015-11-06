@@ -65,27 +65,27 @@ public:
 
   // Initialize
   EH_search_path(const graph_type &g, index_type gi) :
-    rsize(0), tlevel(0), p(g.size()),
+    rsize(0), tlevel(0), local(0), p(g.size()),
     total_distance(value_type()), mygraph(g) {
     init_path();
-    for (size_type j=gi; j>0; j--) p[j] = p[j-1];
+    std::copy(p.begin(), p.begin()+gi, p.begin()+1);
     p[0] = gi;
   }
 
   // Create empty
   EH_search_path(const graph_type &g) :
-    rsize(0), tlevel(0), p(g.size()),
+    rsize(0), tlevel(0), local(0), p(g.size()),
     total_distance(0), mygraph(g) { init_path(); }
 
   // Split
   EH_search_path(const EH_search_path &pa, index_type i) :
-    rsize(pa.global_level()), tlevel(0), p(pa.p),
+    rsize(pa.global_level()), tlevel(0), local(i), p(pa.p),
     total_distance(pa.total_distance), mygraph(pa.mygraph)
   { enqueue(i); }
 
   // Copy
   EH_search_path(const EH_search_path &pa) :
-    rsize(pa.rsize), tlevel(pa.tlevel), p(pa.p),
+    rsize(pa.rsize), tlevel(pa.tlevel), local(pa.local), p(pa.p),
     total_distance(pa.total_distance), mygraph(pa.mygraph) { }
 
   // p.size() is always strictly positive, so returning unsigned is OK
@@ -94,8 +94,8 @@ public:
 
   const_iterator begin() const { return p.begin(); }
   const_reverse_iterator rbegin() const { return p.rbegin(); }
-  const_iterator end() const { return p.begin() + global_level() + 1; }
-  // const_iterator end() const { return p.end(); }
+  // const_iterator end() const { return p.begin() + global_level() + 1; }
+  const_iterator end() const { return p.end(); }
   const_reverse_iterator rend() const { return p.rend(); }
 
   // size() - rsize is always non-negative so this is safe
@@ -144,14 +144,7 @@ private:
   index_type neighbor(index_type ti) const { return p[global_level() + 1 + ti]; }
 
   /* tree implementation */
-  size_type whoami() const {
-    const int gl = global_level();
-    const_iterator pit = p.begin() + gl + 1;
-    const index_type pt = p[gl];
-    const_iterator nit = std::find_if(pit, p.end(),
-                                      [&] (const index_type &a) -> bool { return pt < a; });
-    return std::distance(pit, nit);
-  }
+  size_type whoami() const { return local; }
 
   // The first part is always non-negative so this is safe
   size_type num_children() const
@@ -161,31 +154,38 @@ private:
 #ifndef NDEBUG
     if (i >= num_children()) throw std::runtime_error("Invalid child");
 #endif
-    // std::cout << "begin enqueuing: to neighbor=" << i << "=" << neighbor(i) << " " << global_level() << " " << *this << " , " << whoami() << std::endl;
     const size_type gl = global_level();
     const index_type gi = neighbor(i);
-    // std::cout << "weight before: " << total_distance << " " << gl << " " << gi << std::endl;
-    for (size_type j=gl+1+i; j>gl+1; j--) p[j] = p[j-1];
+    std::copy(p.begin()+gl+1, p.begin()+gl+1+i, p.begin()+gl+2);
     p[gl+1] = gi;
     total_distance += mygraph.distance(p[gl], p[gl+1]);
     tlevel++;
-    // std::cout << "weight after: " << total_distance << std::endl;
-    // std::cout << "end enqueuing: " << global_level() << " " << *this << " , " << whoami() << std::endl;
+    local = i;
   }
 
   void dequeue() {
 #ifndef NDEBUG
     if (is_top()) throw std::runtime_error("No parent");
 #endif
-    index_type i = whoami();
-    // std::cout << "begin dequeuing to neighbor=" << i << "=" << neighbor(i) << " " << global_level() << " " << *this << " , " << whoami() << std::endl;
+    // Move element
+    {
+      const index_type i = whoami();
+      const size_type gl = global_level();
+      const index_type gi = p[gl];
+      total_distance -= mygraph.distance(p[gl-1], p[gl]);
+      for (size_type j=gl; j<gl+i; j++) p[j] = p[j+1];
+      p[gl+i] = gi;
+    }
     tlevel--;
-    const size_type gl = global_level();
-    const index_type gi = p[gl+1];
-    total_distance -= mygraph.distance(p[gl], p[gl+1]);
-    for (size_type j=gl+1; j<gl+1+i; j++) p[j] = p[j+1];
-    p[gl+1+i] = gi;
-    // std::cout << "end dequeuing: " << global_level() << " " << *this << " , " << whoami() << std::endl;
+    // Update local
+    {
+      const size_type gl = global_level();
+      const index_type gi = p[gl];
+      const_iterator pit = p.begin() + gl + 1;
+      const_iterator nit = std::find_if(p.begin()+gl+1, p.end(),
+                                        [&] (const index_type &a) { return gi < a; });
+      local = std::distance(pit, nit);
+    }
   }
 
   virtual bool has_next_sibling() { return whoami() < num_sibling(); }
@@ -193,7 +193,7 @@ private:
   size_type num_sibling() const
   { return num_children() % (mygraph.size() - rsize - 1); }
 
-  size_type rsize, tlevel;
+  index_type rsize, tlevel, local;
   container_type p;
   value_type total_distance;
   const graph_type &mygraph;

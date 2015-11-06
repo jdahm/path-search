@@ -71,7 +71,7 @@ void find_path_task(task_type &sp, manager_type &manager) {
   // Get best answer
   answer_type ans = manager.answer();
 
-  unsigned int branch_level = 2;
+  unsigned int branch_level = 0;
   // unsigned int num_threads = omp_get_num_threads();
   // unsigned int nnode = sp.graph().size() - 1;
   // while ((nnode < num_threads) && (nnode - 1 > 0)) {

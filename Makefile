@@ -1,6 +1,6 @@
 CXX=g++
-CXXFLAGS = -std=c++11 -g -O0
-# CXXFLAGS = -std=c++11 -g -O3 -march=native -DNDEBUG
+# CXXFLAGS = -std=c++11 -g -O0
+CXXFLAGS = -std=c++11 -O3 -march=native -DNDEBUG
 CPPFLAGS = -Wall -Wextra -fopenmp
 
 all: h4
