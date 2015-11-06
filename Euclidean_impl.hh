@@ -41,18 +41,19 @@ private:
 // Hamiltonian search path through a graph -- implied tree
 #include "path.hh"
 #include "tree.hh"
-#include <stack>
+#include <list>
+#include <algorithm>
 template <typename T=double>
-class EH_search_path : public path<T>, public tree {
+class EH_search_path : public path< T, std::list<std::size_t> >, public tree {
 public:
-  typedef path<T> path_type;
+  typedef path< T, std::list<std::size_t> > base_type;
   typedef Euclidean_set<T> graph_type;
-  typedef typename path_type::size_type size_type;
-  typedef typename path_type::index_type index_type;
-  typedef typename path_type::value_type value_type;
-  typedef typename path_type::container_type container_type;
-  typedef typename path_type::const_iterator const_iterator;
-  typedef typename path_type::const_reverse_iterator const_reverse_iterator;
+  typedef typename base_type::size_type size_type;
+  typedef typename base_type::index_type index_type;
+  typedef typename base_type::value_type value_type;
+  typedef typename base_type::container_type container_type;
+  typedef typename base_type::const_iterator const_iterator;
+  typedef typename base_type::const_reverse_iterator const_reverse_iterator;
 
   typedef std::ptrdiff_t difference_type;
 
@@ -64,26 +65,35 @@ public:
 
   // Initialize
   EH_search_path(const graph_type &g, index_type gi) :
-    rsize(0), local(), p(), sp(),
-    total_distance(value_type()), mygraph(g)
-  { p.push_back(gi); sp.insert(gi); local.push(0); }
+    rsize(0), tlevel(0), p(g.size()), it(p.begin()),
+    total_distance(value_type()), mygraph(g) {
+    init_path();
+    if (gi == 0) return;
+    const_iterator pit = std::next(it, 1);
+    const_iterator iit = std::next(it, gi);
+    p.erase(iit);
+    p.insert(pit, gi);
+    std::cout << *this << std::endl;
+  }
+
+  // Create empty
+  EH_search_path(const graph_type &g) :
+    rsize(0), tlevel(0), p(g.size()), it(p.begin()),
+    total_distance(0), mygraph(g) { init_path(); }
 
   // Split
   EH_search_path(const EH_search_path &pa, index_type i) :
-    rsize(pa.size()+1), local(), p(pa.p), sp(pa.sp.begin(), pa.sp.end()),
+    rsize(pa.level()+1), tlevel(0), p(pa.p), it(p.begin()),
     total_distance(pa.total_distance), mygraph(pa.mygraph)
   { enqueue(i); }
 
   // Copy
   EH_search_path(const EH_search_path &pa) :
-    rsize(pa.rsize), local(pa.local), p(pa.p), sp(pa.sp),
+    rsize(pa.rsize), tlevel(pa.level()), p(pa.p), it(p.begin()),
     total_distance(pa.total_distance), mygraph(pa.mygraph) { }
 
-  // Create empty
-  EH_search_path(const graph_type &g) : p(), total_distance(0), mygraph(g) { }
-
   // p.size() is always strictly positive, so returning unsigned is OK
-  size_type size() const { return (p.size() - 1); }
+  size_type size() const { return global_level() + 1; }
   value_type weight() const { return total_distance; }
 
   const_iterator begin() const { return p.begin(); }
@@ -92,9 +102,9 @@ public:
   const_reverse_iterator rend() const { return p.rend(); }
 
   // size() - rsize is always non-negative so this is safe
-  size_type level() const { return size() - rsize; }
+  size_type level() const { return tlevel; }
 
-  size_type global_level() const { return p.size() - 1; }
+  size_type global_level() const { return rsize + level(); }
 
   // Split tree
   EH_search_path split() {
@@ -111,41 +121,39 @@ public:
   // const reference member
   {
     rsize = other.rsize;
-    local = other.local;
+    tlevel = other.tlevel;
     p = other.p;
-    sp = other.sp;
+    it = other.it;
     total_distance = other.total_distance;
     // mygraph = other.mygraph;
     return *this;
   }
 
+  void push_back(index_type ti) { enqueue(ti); }
+  void pop_back() { dequeue(); }
+
   const graph_type& graph() const { return mygraph; }
 
 private:
-  typedef std::stack<index_type> stack_type;
-  typedef std::set<size_type> set_type;
+  void init_path() {
+    std::iota(p.begin(), p.end(), 0);
+    // index_type n = { 0 };
+    // std::generate(p.begin(), p.end(), [&n]{ return n++; });
+  }
 
   /* path implementation */
   size_type num_neighbor() const { return num_children(); }
 
-  index_type neighbor(index_type ti) const {
-    typename set_type::const_iterator sit = sp.begin();
-    size_type gi = 0, in = 0;
-    while (sit != sp.end()) {
-      if (gi == *sit) ++sit;
-      else in++;
-      if (in > ti) return gi;
-      gi++;
-    }
-    difference_type add = ti - in;
-    return gi + add;
-  }
-
-  void push_back(index_type ti) { enqueue(ti); }
-  void pop_back() { dequeue(); }
+  index_type neighbor(index_type ti) const { return *std::next(it, ti+1); }
 
   /* tree implementation */
-  size_type whoami() const { return local.top(); }
+  size_type whoami() const {
+    const_iterator pit = std::next(it, 1);
+    const_iterator nit =
+      std::find_if(pit, p.end(),
+                   [&] (const index_type &a) -> bool { return *it < a; });
+    return std::distance(pit, nit);
+  }
 
   // The first part is always non-negative so this is safe
   size_type num_children() const
@@ -155,22 +163,31 @@ private:
 #ifndef NDEBUG
     if (i >= num_children()) throw std::runtime_error("Invalid child");
 #endif
-    index_type gi = neighbor(i);
-    total_distance += mygraph.distance(p.back(), gi);
-    p.push_back(gi);
-    sp.insert(gi);
-    local.push(i);
+    const_iterator pit = std::next(it, 1);
+    const_iterator iit = std::next(pit, i);
+    index_type gi = *iit;
+    total_distance += mygraph.distance(*it, gi);
+    if (i > 0) {
+      p.erase(iit);
+      p.insert(pit, gi);
+    }
+    tlevel++; ++it;
   }
 
   void dequeue() {
 #ifndef NDEBUG
     if (is_top()) throw std::runtime_error("No parent");
 #endif
-    index_type gi = p.back();
-    p.pop_back();
-    sp.erase(gi);
-    local.pop();
-    total_distance -= mygraph.distance(p.back(), gi);
+    index_type i = whoami();
+    tlevel--; --it;
+    const_iterator iit = std::next(it, 1);
+    const_iterator pit = std::next(iit, i+1);
+    index_type gi = *iit;
+    total_distance -= mygraph.distance(*it, gi);
+    if (i > 0) {
+      p.erase(iit);
+      p.insert(pit, gi);
+    }
   }
 
   virtual bool has_next_sibling() { return whoami() < num_sibling(); }
@@ -178,13 +195,13 @@ private:
   size_type num_sibling() const
   { return num_children() % (mygraph.size() - rsize - 1); }
 
-  size_type rsize;
-  stack_type local;
+  size_type rsize, tlevel;
   container_type p;
-  set_type sp;
+  const_iterator it;
   value_type total_distance;
   const graph_type &mygraph;
 };
+
 
 #include <limits>
 template <typename V>
@@ -196,18 +213,17 @@ EH_search_path<V> longest_path(const Euclidean_set<V> &g) {
 
 // Traverse a (Euclidean) graph -- really just an ordered set of points
 // and weights
-#include "path.hh"
 template <typename T=double>
-class Euclidean_path : public path<T> {
+class Euclidean_path : public path< T, std::deque<std::size_t> > {
 public:
-  typedef path<T> path_type;
+  typedef path< T, std::deque<std::size_t> > base_type;
   typedef Euclidean_set<T> graph_type;
-  typedef typename path_type::size_type size_type;
-  typedef typename path_type::index_type index_type;
-  typedef typename path_type::value_type value_type;
-  typedef typename path_type::container_type container_type;
-  typedef typename path_type::const_iterator const_iterator;
-  typedef typename path_type::const_reverse_iterator const_reverse_iterator;
+  typedef typename base_type::size_type size_type;
+  typedef typename base_type::index_type index_type;
+  typedef typename base_type::value_type value_type;
+  typedef typename base_type::container_type container_type;
+  typedef typename base_type::const_iterator const_iterator;
+  typedef typename base_type::const_reverse_iterator const_reverse_iterator;
 
   Euclidean_path(const graph_type &g, index_type gi) :
     p(), total_distance(value_type()), mygraph(g)
@@ -229,15 +245,7 @@ public:
   // const reference member
   { p = other.p; total_distance = other.total_distance; return *this; }
 
-private:
-  size_type num_neighbor() const
-  { return mygraph.num_neighbor(p.back()); }
-
-  index_type neighbor(index_type i) const
-  { return mygraph.neighbor(p.back(), i); }
-
-  void push_back(index_type i) {
-    index_type gi = neighbor(i);
+  void push_back(index_type gi) {
     total_distance += mygraph.distance(p.back(), gi);
     p.push_back(gi);
   }
@@ -247,6 +255,13 @@ private:
     p.pop_back();
     total_distance -= mygraph.distance(p.back(), gi);
   }
+
+private:
+  size_type num_neighbor() const
+  { return mygraph.num_neighbor(p.back()); }
+
+  index_type neighbor(index_type i) const
+  { return mygraph.neighbor(p.back(), i); }
 
   container_type p;
   value_type total_distance;

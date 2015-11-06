@@ -2,16 +2,16 @@
 #define PATH_HH
 
 #include <cstddef>
-#include <deque>
 #include <iostream>
+#include <deque>
 
-template <typename T=double>
+template < typename T=double, typename Container=std::deque<std::size_t> >
 class path {
 public:
   typedef std::size_t size_type;
   typedef size_type index_type;
   typedef T value_type;
-  typedef std::deque<index_type> container_type;
+  typedef Container container_type;
   typedef typename container_type::const_iterator const_iterator;
   typedef typename container_type::const_reverse_iterator const_reverse_iterator;
 
@@ -27,6 +27,9 @@ public:
   virtual const_iterator end() const = 0;
   virtual const_reverse_iterator rend() const = 0;
 
+  virtual void push_back(index_type i) = 0;
+  virtual void pop_back() = 0;
+
   virtual ~path() { }
 private:
   // Neighbors / options for next step in path
@@ -34,24 +37,21 @@ private:
 
   // Neighbors / options for next step in path
   virtual index_type neighbor(index_type i) const = 0;
-
-  virtual void push_back(index_type i) = 0;
-  virtual void pop_back() = 0;
 };
 
 // Comparison operators for paths (compare the weights)
-template <typename T>
-bool operator<(const path<T> &p1, const path<T> &p2)
+template <typename T, typename C1, typename C2>
+bool operator<(const path<T,C1> &p1, const path<T,C2> &p2)
 { return p1.weight() < p2.weight(); }
 
-template <typename T>
-bool operator>(const path<T> &p1, const path<T> &p2)
+template <typename T, typename C1, typename C2>
+bool operator>(const path<T,C1> &p1, const path<T,C2> &p2)
 { return p1.weight() > p2.weight(); }
 
 // Print path
-template <typename V>
-std::ostream& operator<<(std::ostream& os, const path<V> &p) {
-  typedef typename path<V>::const_iterator path_iterator;
+template <typename V, typename C>
+std::ostream& operator<<(std::ostream& os, const path<V,C> &p) {
+  typedef typename path<V,C>::const_iterator path_iterator;
   os << "path: ";
   for (path_iterator it=p.begin(); it != p.end(); ++it)
     os << (*it) << " ";

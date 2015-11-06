@@ -16,7 +16,7 @@ typedef EH_search_path<real> spath_type;
 typedef Euclidean_path<real> gpath_type;
 
 typedef spath_type task_type;
-typedef gpath_type answer_type;
+typedef spath_type answer_type;
 typedef search_manager<task_type, answer_type> manager_type;
 
 
@@ -82,10 +82,10 @@ void find_path_task(task_type &sp, manager_type &manager) {
 
   do {
     sp.iterate_dfs();
-    // std::cout << sp << "    |     " << ans << std::endl;
-    if (sp.global_level() <= branch_level)
-      while (!sp.last_branch())
-        manager.give(sp.split());
+    // std::cout << sp.global_level() << " : " << sp << "    |     " << ans << std::endl;
+    // if (sp.global_level() <= branch_level)
+    //   while (!sp.last_branch())
+    //     manager.give(sp.split());
     if (sp > ans) sp.next_branch();
     if (sp.is_bottom()) {
       // If answer is better than the bound we cached, submit it to
