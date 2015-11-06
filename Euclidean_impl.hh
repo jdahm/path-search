@@ -138,6 +138,15 @@ private:
     // std::generate(p.begin(), p.end(), [&n]{ return n++; });
   }
 
+  void update_local() {
+    const size_type gl = global_level();
+    const index_type gi = p[gl];
+    const_iterator pit = p.begin() + gl + 1;
+    const_iterator nit = std::find_if(p.begin()+gl+1, p.end(),
+                                      [&] (const index_type &a) { return gi < a; });
+    local = std::distance(pit, nit);
+  }
+
   /* path implementation */
   size_type num_neighbor() const { return num_children(); }
 
@@ -167,25 +176,14 @@ private:
 #ifndef NDEBUG
     if (is_top()) throw std::runtime_error("No parent");
 #endif
-    // Move element
-    {
-      const index_type i = whoami();
-      const size_type gl = global_level();
-      const index_type gi = p[gl];
-      total_distance -= mygraph.distance(p[gl-1], p[gl]);
-      for (size_type j=gl; j<gl+i; j++) p[j] = p[j+1];
-      p[gl+i] = gi;
-    }
+    const index_type i = whoami();
+    const size_type gl = global_level();
+    const index_type gi = p[gl];
+    total_distance -= mygraph.distance(p[gl-1], p[gl]);
+    for (size_type j=gl; j<gl+i; j++) p[j] = p[j+1];
+    p[gl+i] = gi;
     tlevel--;
-    // Update local
-    {
-      const size_type gl = global_level();
-      const index_type gi = p[gl];
-      const_iterator pit = p.begin() + gl + 1;
-      const_iterator nit = std::find_if(p.begin()+gl+1, p.end(),
-                                        [&] (const index_type &a) { return gi < a; });
-      local = std::distance(pit, nit);
-    }
+    update_local();
   }
 
   virtual bool has_next_sibling() { return whoami() < num_sibling(); }
