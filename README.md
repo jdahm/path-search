@@ -128,3 +128,9 @@ do task
 
 
 path: 0 1 6 2 5 3 4 7 weight: 29.9379
+
+
+* Remove if statements in next_branch() and check about reducing the
+logic there
+* Switch manager queue to FILO std::stack
+* Look into optimizing the split() and manager/queue calls

@@ -20,6 +20,7 @@ public:
   // Returns true if the tree has no children
   bool is_bottom() { return num_children() == 0; }
 
+  // Returns true if we're on the last branch at this level
   bool last_branch() { return !has_next_sibling(); }
 
   // Go to next branch in the tree traversing up, then to next sibling
@@ -56,8 +57,7 @@ private:
   // Returns true if the tree has a next sibling. This is a rather
   // slow implementation, so tree types implementing this iterface can
   // overwrite it.
-  virtual bool has_next_sibling()
-  {
+  virtual bool has_next_sibling() {
     if (is_top()) return false;
     index_type myself = whoami();
     dequeue();
@@ -68,14 +68,14 @@ private:
 
   // Moves current node to next sibling
   void next_sibling() {
-// #ifndef NDEBUG
-//     if (!has_next_sibling()) throw std::runtime_error("Next child does not exist");
-// #endif
-    if (!has_next_sibling()) return;
-    index_type myself = whoami();
-    // if (is_top()) return;
+    // It is the caller's responsibility to ensure that there actually is a next sibling
+#ifndef NDEBUG
+    if (!has_next_sibling()) throw std::runtime_error("Next child does not exist");
+#endif
+    // if (!has_next_sibling()) return;
+    index_type next = whoami() + 1;
     dequeue();
-    enqueue(++myself);
+    enqueue(next);
   }
 
 };

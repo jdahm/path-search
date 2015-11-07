@@ -10,7 +10,8 @@
 template <typename T>
 class search_queue : public task_queue<T> {
 public:
-  typedef std::queue<T> container_type;
+  // typedef std::queue<T> container_type;
+  typedef std::stack<T> container_type;
   typedef task_queue<T> base_type;
   typedef typename base_type::task_type task_type;
   typedef typename base_type::size_type size_type;
@@ -24,7 +25,8 @@ public:
 
   task_type get() {
     get_lock();
-    task_type task = container.front();
+    // task_type task = container.front();
+    task_type task = container.top();
     container.pop();
     release_lock();
     return task;

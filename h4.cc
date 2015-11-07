@@ -39,7 +39,7 @@ graph_type example_graph() {
 }
 
 graph_type create_point_set(index_type c) {
-  using std::abs; using std::pow;
+  using std::abs; using std::pow; using std::sin;
   // ( |p1-q1|^(3/2) + |p2-q2|^(3/2) )^(2/3)
   square_symmetric_matrix<real> dt(c);
   std::vector< std::array<real,2> > point(c);
@@ -48,8 +48,10 @@ graph_type create_point_set(index_type c) {
   {
 #pragma omp for
     for (unsigned int i=0; i<c; i++) {
-      point[i][0] = 1.1 * (i*i   % 17);
-      point[i][1] = 0.5 * (i*i*i % 23);
+      point[i][0] = 100 * sin(i);
+      point[i][1] = 101 * cos(i*i);
+      // point[i][0] = 1.1 * (i*i   % 17);
+      // point[i][1] = 0.5 * (i*i*i % 23);
     }
 
 #pragma omp for collapse(2)
@@ -84,7 +86,7 @@ void find_path_task(task_type &sp, manager_type &manager, const index_type branc
     sp.iterate_dfs();
     // std::cout << "After: " << sp.global_level() << " : " << sp << "    |     " << ans << std::endl;
     if (sp.global_level() <= branch_level)
-      while (!sp.last_branch()){
+      while (!sp.last_branch()) {
         // std::cout << "Splitting" << std::endl;
         manager.give(sp.split());
       }
