@@ -67,11 +67,10 @@ graph_type create_point_set(index_type c) {
 }
 
 
-void find_path_task(task_type &sp, manager_type &manager) {
+void find_path_task(task_type &sp, manager_type &manager, const index_type branch_level) {
   // Get best answer
   answer_type ans = manager.answer();
 
-  unsigned int branch_level = 0;
   // unsigned int num_threads = omp_get_num_threads();
   // unsigned int nnode = sp.graph().size() - 1;
   // while ((nnode < num_threads) && (nnode - 1 > 0)) {
@@ -85,8 +84,10 @@ void find_path_task(task_type &sp, manager_type &manager) {
     sp.iterate_dfs();
     // std::cout << "After: " << sp.global_level() << " : " << sp << "    |     " << ans << std::endl;
     if (sp.global_level() <= branch_level)
-      while (!sp.last_branch())
+      while (!sp.last_branch()){
+        // std::cout << "Splitting" << std::endl;
         manager.give(sp.split());
+      }
     if (sp > ans) sp.next_branch();
     if (sp.is_bottom()) {
       // If answer is better than the bound we cached, submit it to
@@ -97,7 +98,7 @@ void find_path_task(task_type &sp, manager_type &manager) {
   } while (!sp.is_top());
 }
 
-const answer_type find_path(const graph_type &g) {
+const answer_type find_path(const graph_type &g, const index_type branch_level) {
   task_type sp(g, 0);
   manager_type manager(sp, longest_path(g));
 
@@ -106,7 +107,7 @@ const answer_type find_path(const graph_type &g) {
     while (!manager.done())
       if (manager.has_work()) {
         task_type sp = manager.get();
-        find_path_task(sp, manager);
+        find_path_task(sp, manager, branch_level);
         manager.finish(sp);
       }
   }
@@ -128,7 +129,7 @@ int main(int argc, char *argv[]) {
 
   // auto ps = example_graph();
   auto ps = create_point_set(c);
-  auto sp = find_path(ps);
+  auto sp = find_path(ps, branch_level);
 
   end_time = omp_get_wtime();
 
