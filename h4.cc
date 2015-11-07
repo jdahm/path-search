@@ -70,31 +70,19 @@ graph_type create_point_set(index_type c) {
 
 
 void find_path_task(task_type &sp, manager_type &manager, const index_type branch_level) {
-  // Get best answer
+  // Get current best answer
   answer_type ans = manager.answer();
-
-  // unsigned int num_threads = omp_get_num_threads();
-  // unsigned int nnode = sp.graph().size() - 1;
-  // while ((nnode < num_threads) && (nnode - 1 > 0)) {
-  //   branch_level++;
-  //   nnode *= (nnode - 1);
-  // }
-  // std::cout << "branch level = " << branch_level << std::endl;
-
   do {
-    // std::cout << "Before: " << sp.global_level() << " : " << sp << "    |     " << ans << std::endl;
     sp.iterate_dfs();
-    // std::cout << "After: " << sp.global_level() << " : " << sp << "    |     " << ans << std::endl;
     if (sp.global_level() <= branch_level)
-      while (!sp.last_branch()) {
-        // std::cout << "Splitting" << std::endl;
+      while (!sp.last_branch())
         manager.give(sp.split());
-      }
     if (sp > ans) sp.next_branch();
     if (sp.is_bottom()) {
-      // If answer is better than the bound we cached, submit it to
-      // the manager (which will ensure it's _actually_ better) and
-      // will return the newest answer.
+      // If we got here, the answer is better than the currently
+      // cached bound. In this case, submit it to the manager (which
+      // will ensure it's _actually_ better) and will return the
+      // newest best answer.
       ans = manager.conclude(sp);
     }
   } while (!sp.is_top());

@@ -34,8 +34,6 @@ public:
 
   // Take a step of dfs. If at the bottom with no neighbors, traverse up and onto next branch
   void iterate_dfs() {
-    // Algorithm given here by @aaz:
-    // http://stackoverflow.com/questions/5278580/non-recursive-depth-first-search-algorithm
     if (num_children() > 0) enqueue(0);
     else next_branch();
   }
