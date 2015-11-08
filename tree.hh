@@ -25,7 +25,7 @@ public:
 
   // Go to next branch in the tree traversing up, then to next sibling
   void next_branch() {
-    while (!has_next_sibling()) {
+    while (last_branch()) {
       if (is_top()) return;
       dequeue();
     }
