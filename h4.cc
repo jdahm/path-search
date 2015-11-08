@@ -74,16 +74,22 @@ void find_path_task(task_type &sp, manager_type &manager, const index_type branc
   answer_type ans = manager.answer();
   do {
     sp.iterate_dfs();
-    if (sp.global_level() <= branch_level)
-      while (!sp.last_branch())
-        manager.give(sp.split());
-    if (sp > ans) sp.next_branch();
-    if (sp.is_bottom()) {
+    if (sp > ans) {
+      // If the path is longer tan the currently cached bound, skip
+      // ahead to the next branch
+      sp.next_branch();
+    }
+    else if (sp.is_bottom()) {
       // If we got here, the answer is better than the currently
       // cached bound. In this case, submit it to the manager (which
       // will ensure it's _actually_ better) and will return the
       // newest best answer.
       ans = manager.conclude(sp);
+    }
+    else if (sp.global_level() <= branch_level) {
+      // Branch off and submit back to the queue
+      while (!sp.last_branch())
+        manager.give(sp.split());
     }
   } while (!sp.is_top());
 }

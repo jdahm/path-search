@@ -84,9 +84,11 @@ public:
   }
 
   answer_type& conclude(const answer_type &a) {
-    get_lock();
-    if (a < ans) ans = a;      
-    release_lock();
+    if (a < ans) {
+      get_lock();
+      ans = a;
+      release_lock();
+    }
     return ans;
   }
 
@@ -99,8 +101,8 @@ public:
   }
 
   bool has_work() {
-    get_lock();
     bool work;
+    get_lock();
     if (!alloc) {
       work = (queue.size() > 0);
       if (work) alloc = true;
