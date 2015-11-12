@@ -11,9 +11,10 @@ public:
   virtual void add(const task_type &t) = 0;
   virtual task_type get() = 0;
   virtual size_type size() = 0;
+  virtual ~task_queue() { }
+private:
   virtual void get_lock() = 0;
   virtual void release_lock() = 0;
-  virtual ~task_queue() { }
 // private:
 //   virtual void allocate() = 0;
 };
