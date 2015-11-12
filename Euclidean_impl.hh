@@ -195,6 +195,7 @@ EH_search_path<V> longest_path(const Euclidean_set<V> &g) {
 
 // Traverse a (Euclidean) graph -- really just an ordered set of points
 // and weights
+// This path implementation is not used
 template <typename T=double>
 class Euclidean_path : public path< T, std::deque<std::size_t> > {
 public:
